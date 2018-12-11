@@ -3,9 +3,10 @@
   border: solid 1px #f0f0f0;
   height: 90px;
   margin: 1px 0px;
-  border-radius: 5px;
+  border-radius: 20px;
   display: flex;
   justify-content: space-between;
+  padding: 0 10px;
 }
 .stock-container i {
   margin-top:10px;

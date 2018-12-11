@@ -1,9 +1,16 @@
 .mainSearch {
 	width: 50%;
+	border: solid #f0f0f0 1px;
+	border-radius: 30px;
 	min-width: 300px;
 	height: 32px;
 	padding: 2px 0px;
 	text-align: center;
 	line-height: 28px;
 	font-size: 23px;
+	outline: none !important;
+}
+
+.mainSearch:hover, .mainSearch:focus{
+	box-shadow: #FF5D73 0px 0px 10px 1px;
 }
