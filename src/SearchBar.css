@@ -1,0 +1,9 @@
+.mainSearch {
+	width: 50%;
+	min-width: 300px;
+	height: 32px;
+	padding: 2px 0px;
+	text-align: center;
+	line-height: 28px;
+	font-size: 23px;
+}
