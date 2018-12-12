@@ -1,8 +1,8 @@
 .stock-container{
-  background-color: #FFF;
-  border: solid 1px #f0f0f0;
+  background-color: transparent;
+  /*border: solid 1px #f0f0f0;*/
   height: 90px;
-  margin: 1px 0px;
+  /*margin: 1px 0px;*/
   border-radius: 20px;
   display: flex;
   justify-content: space-between;
@@ -40,6 +40,10 @@
 
 }
 
+.stock-container:focus {
+  box-shadow:none!important;
+  background: #c3c3c3;
+}
 .star:after {  
   transform: rotate(35deg) !important;
 }

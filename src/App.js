@@ -1,10 +1,17 @@
 import React, { Component } from 'react';
 import SearchBar from './SearchBar';
+import StockPreview from './StockPreview';
 import StockCard from './StockCard';
 import './App.css';
 import { tickerSearch } from './data/tickerSearch';
 import { keys } from './constants/keys';
- 
+import { library } from '@fortawesome/fontawesome-svg-core'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faTimes } from '@fortawesome/free-solid-svg-icons'
+
+let timeout;
+
+library.add(faTimes);
 const filterTicker = (text, list,favourites) => { return new Promise((resolve,reject) => {
   let filteredList = [];
   if (!text.length) resolve([]);
@@ -12,9 +19,9 @@ const filterTicker = (text, list,favourites) => { return new Promise((resolve,re
   list.forEach((c) => {
     let foundTicker = c.symbol.match(textRegex);
     let foundName =  c.name.match(textRegex);
-    favourites.indexOf(c.symbol)
+    //favourites.indexOf(c.symbol)
     //console.log(found, c.name);
-    if ((foundName || foundTicker) && favourites.indexOf(c.symbol) < 0) filteredList.push({...c,relevance: ((foundName && text.length / c.name.length) || (foundTicker && text.length / c.symbol.length))});
+    if ((foundName || foundTicker) && !favourites.filter(v => v.symbol === c.symbol).length) filteredList.push({...c,relevance: ((foundName && text.length / c.name.length) || (foundTicker && text.length / c.symbol.length))});
 
   });
   filteredList.sort((a,b) => 
@@ -31,14 +38,20 @@ class App extends Component {
     super(props);
     this.state = {
       dataList: [],
+      preview: {},
       favourites: [],
-      searchText: ''
+      timeout: {},
+      searchText: '',
+      searching: false
     }
      this.onChangeSearch = this.onChangeSearch.bind(this);
      this.unTab = this.unTab.bind(this);
      this.addToFavourites = this.addToFavourites.bind(this);
+     this.previewStock = this.previewStock.bind(this);
      this.removeFromFavourites = this.removeFromFavourites.bind(this);
+     this.onChangeFocusSearch = this.onChangeFocusSearch.bind(this);
      this.onKeyDown = this.onKeyDown.bind(this);
+     this.closePreview = this.closePreview.bind(this);
   }
 
   onChangeSearch(evt) {
@@ -62,9 +75,49 @@ class App extends Component {
     ev.target.tabIndex=-1;
   }
 
+  onChangeFocusSearch(ev) {
+    switch (ev.type) {
+      case 'focus':
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {this.setState({searching: true})}, 10);
+        break;
+      case 'blur':
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {this.setState({searching: false})}, 10);
+        if (ev.target.tagName==="LI") ev.target.tabIndex = -1
+        break;
+      default:
+        break;
+    }
+  }
+
   onKeyDown(ev) {
-    if (ev.target.tagName==="UL" && ev.target.firstElementChild) {
-      let next;
+    let next;
+    if (ev.target.tagName==="INPUT" && ev.target.nextElementSibling) {
+      switch (ev.keyCode) {
+        case keys.KEY_DOWN_ARROW: 
+          next = ev.target.nextElementSibling.firstElementChild;
+          if(next) {
+            next.tabIndex = 0;
+            next.focus();
+          }
+          break;
+        case keys.KEY_UP_ARROW:
+          next = ev.target.nextElementSibling.lastElementChild;
+          if(next) {
+            next.tabIndex = 0;
+            next.focus();
+          }
+          break;
+        case keys.KEY_ESCAPE:
+          ev.target.blur();
+          break;
+        default:
+          break;
+      }
+
+    }
+    else if (ev.target.tagName==="UL" && ev.target.firstElementChild) {
       switch(ev.keyCode) {
         case keys.KEY_DOWN_ARROW:
           next = ev.target.firstElementChild;
@@ -84,8 +137,7 @@ class App extends Component {
     }
     else if (ev.target.tagName==="LI") {
       let curr = ev.target;
-      let parent = ev.target.parentElement;
-      let next;
+      let parent = ev.target.parentElement.previousElementSibling;
       switch(ev.keyCode) {
         case keys.KEY_DOWN_ARROW:
           if(curr.nextElementSibling) {
@@ -106,9 +158,9 @@ class App extends Component {
           }
           break;
         case keys.KEY_ENTER:
-          curr.getElementsByClassName('star')[0].click();
+          curr.click();
           curr.tabIndex=-1;
-          parent.focus();
+          // parent.focus();
           break;
         case keys.KEY_ESCAPE:
           parent.focus();
@@ -127,8 +179,23 @@ class App extends Component {
     const newData = this.state.dataList.filter((c) => {
       return c.symbol !== v.symbol;
     });
-    this.setState({favourites: [...currFave,v], dataList: newData});
+    clearTimeout(timeout);
+    this.setState({favourites: [...currFave,v], dataList: newData, searching:false});
     //console.log(v);
+  }
+
+  previewStock(v) {
+    // const newData = this.state.dataList.filter((c) => {
+    //   return c.symbol !== v.symbol;
+    // });
+    clearTimeout(timeout);
+    // this.setState({preview: v, dataList: newData, searching:false});
+    this.setState({preview: v, searching:false});
+    //console.log(v);
+  }
+
+  closePreview(v) {
+    this.setState({preview: {}});
   }
 
   removeFromFavourites(v) {
@@ -154,21 +221,8 @@ class App extends Component {
           </h2>
         </header>
         <main>
-        {this.state.favourites.length ? <ul className="stock-list-holder" onKeyDown={this.onKeyDown} tabIndex='0'>
-                        { this.state.favourites.slice(0,50).map((v) => {
-                  return (<li key={v.symbol} onBlur={this.unTab}>
-                              {StockCard(v, this.removeFromFavourites, true)}
-                            </li>)
-                })}
-                </ul> : <div/>}
-        <SearchBar text={this.state.searchText} onChangeSearch={this.onChangeSearch} />
-          {this.state.dataList.length ? <ul className="stock-list-holder" onKeyDown={this.onKeyDown} tabIndex='0'>
-                  {this.state.dataList.slice(0,50).map((v, i) => {
-                    return (<li key={v.symbol} onBlur={this.unTab}>
-                                {StockCard(v, this.addToFavourites, false)}
-                              </li>)
-                  })}
-                </ul> : <div/>}
+            <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
+            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} closePreview={this.closePreview}/> : <div/>}
         </main>
       </div>
     );

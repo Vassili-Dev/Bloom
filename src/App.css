@@ -18,18 +18,7 @@ main{
   justify-content: center;
   font-size: calc(10px + 2vmin);
   font-weight: 500;
-  color: white;
-}
-.stock-list-holder{
-  width: 50%;
-  /*background-color: #fefefe;*/
-  min-width: 300px;
-  border: none #f3f3f3 1px;
-  border-radius: 20px;
-  max-height: 64vh;
-  overflow: scroll;
-  padding: 0 10px!important; 
-  overflow: scroll;
+  color: rgba(255,255,255,0.6);
 }
 
 ul {
@@ -41,7 +30,7 @@ ul {
 
 li {
   border-radius: 20px;
-  margin: 5px 0px;  
+  /*margin-top: 5px;  */
 }
 @keyframes App-logo-spin {
   from {
