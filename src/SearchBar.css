@@ -18,9 +18,9 @@
 
 .search-container{
   border: solid #d0d0d0 1px;
-  /*height:34px;*/
+  height:34px;
   max-height: 34px;
-  min-width: 380px;
+  min-width: 350px;
   border-radius: 20px;
   width:50%;
   overflow: hidden;
@@ -31,11 +31,15 @@
   -o-transition: all 0.2s;
 }
 .search-container.showing{
-  /*height:69vh;*/
-  max-height: 545.718px;
+  height:69vh;
+  max-height: fit-content;
 }
 
+.showing .stock-list-holder{
+  display: block!important;
+}
 .stock-list-holder{
+  display: none;
   width: 100%;
   margin:0px!important;
   background-color: transparent;

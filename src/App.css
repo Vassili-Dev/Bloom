@@ -7,6 +7,11 @@ main{
   align-items: center;
   justify-content: space-around;
 }
+
+::-webkit-scrollbar { 
+  display: none; 
+}
+
 .App-header {
   background-color: #FF5D73;
   box-shadow: #0e0e0e 0px 0px 14px 1px;

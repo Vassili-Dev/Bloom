@@ -5,7 +5,7 @@
 	display: flex;
 	flex-direction: column;
 	width: 50%;
-	box-shadow: #606060 0px 0px 10px 1px;
+	box-shadow: #c0c0c0 0px 0px 10px 1px;
 	background-color: rgba(255, 255 , 255 , 0.3);
 	min-width: 250px;
 	min-height: 200px;
@@ -20,6 +20,19 @@
 	color: #303030;
 }
 
+.close-button:hover {
+	cursor: pointer;
+}
+
+.stock-value {
+	font-size: 20px!important;
+}
+.green {
+	color: green;
+}
+.red {
+	color: red;
+}
 .stock-preview-content {
 	text-align: center;
 }

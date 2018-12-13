@@ -1,17 +1,19 @@
 import React, { Component } from 'react';
 import SearchBar from './SearchBar';
 import StockPreview from './StockPreview';
-import StockCard from './StockCard';
 import './App.css';
 import { tickerSearch } from './data/tickerSearch';
 import { keys } from './constants/keys';
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+//import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes } from '@fortawesome/free-solid-svg-icons'
+import request from 'request';
+import { USER_KEY } from './constants/alphaVantage';
 
 let timeout;
 
 library.add(faTimes);
+
 const filterTicker = (text, list,favourites) => { return new Promise((resolve,reject) => {
   let filteredList = [];
   if (!text.length) resolve([]);
@@ -52,6 +54,7 @@ class App extends Component {
      this.onChangeFocusSearch = this.onChangeFocusSearch.bind(this);
      this.onKeyDown = this.onKeyDown.bind(this);
      this.closePreview = this.closePreview.bind(this);
+     this.queryStockQuote = this.queryStockQuote.bind(this);
   }
 
   onChangeSearch(evt) {
@@ -75,6 +78,16 @@ class App extends Component {
     ev.target.tabIndex=-1;
   }
 
+  queryStockQuote(stock) {
+    request(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=${USER_KEY}`, (err,res) => {
+      if (err) throw err;
+      else this.setState((oldState,oldProps) => {
+        //console.log(JSON.parse(res.body)["Global Quote"]);
+        stock.quote = JSON.parse(res.body)["Global Quote"];
+        return({preview: stock});
+      });
+    });
+  }
   onChangeFocusSearch(ev) {
     switch (ev.type) {
       case 'focus':
@@ -191,6 +204,7 @@ class App extends Component {
     clearTimeout(timeout);
     // this.setState({preview: v, dataList: newData, searching:false});
     this.setState({preview: v, searching:false});
+    this.queryStockQuote(v);
     //console.log(v);
   }
 
@@ -199,7 +213,7 @@ class App extends Component {
   }
 
   removeFromFavourites(v) {
-    const currData = this.state.dataList;
+    //const currData = this.state.dataList;
     const newFaves = this.state.favourites.filter((c) => {
       return c.symbol !== v.symbol;
     });
@@ -222,7 +236,7 @@ class App extends Component {
         </header>
         <main>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
-            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} closePreview={this.closePreview}/> : <div/>}
+            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} querySymbol={this.queryStockQuote} closePreview={this.closePreview}/> : <div/>}
         </main>
       </div>
     );
