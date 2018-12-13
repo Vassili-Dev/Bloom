@@ -20,6 +20,16 @@ const isLocalhost = Boolean(
     )
 );
 
+export const config = {
+  onSuccess: (registration) => {
+    let sw = registration.waiting;
+    sw.onfetch = (ev) => {
+      console.log('Captured fetch');
+      console.log(ev);
+    }
+  }
+}
+
 export function register(config) {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     // The URL constructor is available in all browsers that support SW.
@@ -89,6 +99,11 @@ function registerValidSW(swUrl, config) {
                 config.onSuccess(registration);
               }
             }
+          } else if (installingWorker.state === 'installed') {
+            installingWorker.addEventListener('fetch', (evt) => {
+              console.log('captured fetch');
+              console.log(evt);
+            });
           }
         };
       };
@@ -125,6 +140,7 @@ function checkValidServiceWorker(swUrl, config) {
       );
     });
 }
+
 
 export function unregister() {
   if ('serviceWorker' in navigator) {

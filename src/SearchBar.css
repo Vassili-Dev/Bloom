@@ -31,7 +31,7 @@
   -o-transition: all 0.2s;
 }
 .search-container.showing{
-  height:69vh;
+  height:34vh;
   max-height: fit-content;
 }
 
@@ -45,7 +45,7 @@
   background-color: transparent;
   /*border-top: solid #f3f3f3 1px;*/
   /*border-radius: 20px;*/
-  max-height: 64vh;
+  max-height: 30vh;
   overflow: scroll;
   padding: 0px 0px 0 0px!important; 
   overflow: scroll;

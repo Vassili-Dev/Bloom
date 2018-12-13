@@ -1,20 +1,23 @@
 import React, { Component } from 'react';
+
 import SearchBar from './SearchBar';
 import StockPreview from './StockPreview';
+import Portfolio from './Portfolio';
+
 import './App.css';
 import { tickerSearch } from './data/tickerSearch';
 import { keys } from './constants/keys';
 import { library } from '@fortawesome/fontawesome-svg-core'
 //import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faTimesCircle, faBookmark, faNewspaper, faBars } from '@fortawesome/free-solid-svg-icons'
 import request from 'request';
 import { USER_KEY } from './constants/alphaVantage';
 
 let timeout;
 
-library.add(faTimes);
+library.add(faTimesCircle, faBookmark, faNewspaper, faBars );
 
-const filterTicker = (text, list,favourites) => { return new Promise((resolve,reject) => {
+const filterTicker = (text, list,favourites=[]) => { return new Promise((resolve,reject) => {
   let filteredList = [];
   if (!text.length) resolve([]);
   let textRegex = new RegExp(text,'i');
@@ -23,8 +26,8 @@ const filterTicker = (text, list,favourites) => { return new Promise((resolve,re
     let foundName =  c.name.match(textRegex);
     //favourites.indexOf(c.symbol)
     //console.log(found, c.name);
-    if ((foundName || foundTicker) && !favourites.filter(v => v.symbol === c.symbol).length) filteredList.push({...c,relevance: ((foundName && text.length / c.name.length) || (foundTicker && text.length / c.symbol.length))});
-
+    //if ((foundName || foundTicker) && !favourites.filter(v => v.symbol === c.symbol).length) filteredList.push({...c,relevance: ((foundName && text.length / c.name.length) || (foundTicker && text.length / c.symbol.length))});
+    if ((foundName || foundTicker) && (!favourites.length || !favourites.filter(v => v.symbol === c.symbol).length)) filteredList.push({...c,relevance: ((foundName && text.length / c.name.length) || (foundTicker && text.length / c.symbol.length))});
   });
   filteredList.sort((a,b) => 
   {
@@ -64,12 +67,12 @@ class App extends Component {
     this.setState({searchText: newText});
     // filterTicker(newText).then(res => this.setState({dataList: res})); 
     if (prevSearch.length >= newText.length || prevSearch.length === 0) {
-      filterTicker(newText,tickerSearch,favourites).then(res => this.setState({dataList: res})); 
+      filterTicker(newText,tickerSearch).then(res => this.setState({dataList: res})); 
     } else {
       const prevData = this.state.dataList;
       prevData.length
-        ? filterTicker(newText,prevData,favourites).then(res => this.setState({dataList: res}))
-        : filterTicker(newText,tickerSearch,favourites).then(res => this.setState({dataList: res})); 
+        ? filterTicker(newText,prevData).then(res => this.setState({dataList: res}))
+        : filterTicker(newText,tickerSearch).then(res => this.setState({dataList: res})); 
     }
     
   }
@@ -82,9 +85,15 @@ class App extends Component {
     request(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=${USER_KEY}`, (err,res) => {
       if (err) throw err;
       else this.setState((oldState,oldProps) => {
+        let resJson = JSON.parse(res.body);
         //console.log(JSON.parse(res.body)["Global Quote"]);
-        stock.quote = JSON.parse(res.body)["Global Quote"];
-        return({preview: stock});
+        if (resJson["Global Quote"]) stock.quote = resJson["Global Quote"];
+        console.log(this.state.preview.symbol, stock.symbol);
+        if(stock.symbol === this.state.preview.symbol) return({preview: stock})
+        else { 
+          console.log('blocked');
+          return;
+        }
       });
     });
   }
@@ -188,21 +197,27 @@ class App extends Component {
   }
 
   addToFavourites(v) {
-    const currFave = this.state.favourites;
-    const newData = this.state.dataList.filter((c) => {
-      return c.symbol !== v.symbol;
-    });
     clearTimeout(timeout);
-    this.setState({favourites: [...currFave,v], dataList: newData, searching:false});
+    this.setState((oldState, oldProps) => {
+      let cFavourites = oldState.favourites;
+      if (!v.bookmarked) {
+        v.bookmarked = true;
+        cFavourites.push(v);
+      } else {
+        v.bookmarked = false;
+        cFavourites = cFavourites.filter((c) => c.symbol != v.symbol);
+      }
+      return({favourites: cFavourites, preview: v});
+    });
     //console.log(v);
   }
 
   previewStock(v) {
-    // const newData = this.state.dataList.filter((c) => {
-    //   return c.symbol !== v.symbol;
-    // });
+    let favourites = this.state.favourites;
     clearTimeout(timeout);
-    // this.setState({preview: v, dataList: newData, searching:false});
+    let fromFavourites = favourites.find((c) => c.symbol == v.symbol);
+    v = fromFavourites ? fromFavourites : v;
+    //console.log(v);
     this.setState({preview: v, searching:false});
     this.queryStockQuote(v);
     //console.log(v);
@@ -236,7 +251,8 @@ class App extends Component {
         </header>
         <main>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
-            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} querySymbol={this.queryStockQuote} closePreview={this.closePreview}/> : <div/>}
+            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} querySymbol={this.queryStockQuote} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
+            <Portfolio onselect={this.previewStock} dataList={this.state.favourites} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
         </main>
       </div>
     );

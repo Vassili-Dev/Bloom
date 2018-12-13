@@ -23,7 +23,7 @@ main{
   justify-content: center;
   font-size: calc(10px + 2vmin);
   font-weight: 500;
-  color: rgba(255,255,255,0.6);
+  color: rgba(0,0,0,0.6)
 }
 
 ul {

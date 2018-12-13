@@ -4,20 +4,41 @@
 	border: solid #c3c3c3 1px;
 	display: flex;
 	flex-direction: column;
+	justify-content: space-between;
 	width: 50%;
 	box-shadow: #c0c0c0 0px 0px 10px 1px;
 	background-color: rgba(255, 255 , 255 , 0.3);
 	min-width: 250px;
 	min-height: 200px;
+	overflow:hidden;
 }
 
+.padder{
+	width:25px;
+	height: 100%;
+	display:block;
+}
+
+.bookmark-button.bookmarked{
+	color: #FF5D73;
+}
 .stock-preview-head{
 	padding: 0px 20px;
+	text-align: center;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	flex-direction: row;
 	color: #303030;
+}
+
+.stock-preview-footer{
+	display: flex;
+	min-height: 40px;
+	background-color: rgba(200,200,200,0.3);
+	flex-direction: row;
+	justify-content: space-evenly;
+	align-items: center;
 }
 
 .close-button:hover {
@@ -34,5 +55,11 @@
 	color: red;
 }
 .stock-preview-content {
+	padding-bottom: 30px;
+	min-height: fit-content;
 	text-align: center;
+}
+
+.stock-preview-content p{
+	margin-top: 0;
 }
