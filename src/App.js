@@ -11,7 +11,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 //import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimesCircle, faBookmark, faNewspaper, faBars } from '@fortawesome/free-solid-svg-icons'
 import request from 'request';
-import { USER_KEY } from './constants/alphaVantage';
+import { USER_KEY, BASE_URL, QUOTE_PATH } from './constants/alphaVantage';
+import localforage from "localforage";
 
 let timeout;
 
@@ -60,8 +61,18 @@ class App extends Component {
      this.queryStockQuote = this.queryStockQuote.bind(this);
   }
 
+  componentDidMount() {
+    localforage.getItem('state')
+      .then((data) => {
+        this.setState(data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   onChangeSearch(evt) {
-    const favourites = this.state.favourites;
+    //const favourites = this.state.favourites;
     const prevSearch = this.state.searchText;
     const newText = evt.target.value.trimLeft();
     this.setState({searchText: newText});
@@ -82,20 +93,57 @@ class App extends Component {
   }
 
   queryStockQuote(stock) {
-    request(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=${USER_KEY}`, (err,res) => {
-      if (err) throw err;
-      else this.setState((oldState,oldProps) => {
-        let resJson = JSON.parse(res.body);
-        //console.log(JSON.parse(res.body)["Global Quote"]);
-        if (resJson["Global Quote"]) stock.quote = resJson["Global Quote"];
-        console.log(this.state.preview.symbol, stock.symbol);
-        if(stock.symbol === this.state.preview.symbol) return({preview: stock})
-        else { 
-          console.log('blocked');
-          return;
-        }
-      });
+    localforage.getItem(`${BASE_URL}${QUOTE_PATH}&symbol=${stock.symbol}&apikey=${USER_KEY}`).then(data => {
+      if (data && data["Global Quote"]) {
+        //console.log(data["Global Quote"]);
+        stock.quote = data["Global Quote"];
+        this.setState({preview: stock});
+        request(`${BASE_URL}${QUOTE_PATH}&symbol=${stock.symbol}&apikey=${USER_KEY}`, (err,res) => {
+          if (err) this.setState({error: err});
+          else this.setState((oldState,oldProps) => {
+            let resJson = JSON.parse(res.body);
+            //console.log(JSON.parse(res.body)["Global Quote"]);
+            if (resJson["Global Quote"]) {
+              stock.quote = resJson["Global Quote"];
+              if(stock.symbol === this.state.preview.symbol) {
+                localforage.setItem(`${BASE_URL}${QUOTE_PATH}&symbol=${stock.symbol}&apikey=${USER_KEY}`,resJson);
+                return({preview: stock});
+              }
+              else { 
+                console.log('blocked');
+                return;
+              }
+            }
+            //console.log(this.state.preview.symbol, stock.symbol);
+
+          });
+        });
+      } else {
+        request(`${BASE_URL}${QUOTE_PATH}&symbol=${stock.symbol}&apikey=${USER_KEY}`, (err,res) => {
+          if (err) this.setState({error: err});
+          else this.setState((oldState,oldProps) => {
+            let resJson = JSON.parse(res.body);
+            //console.log(JSON.parse(res.body)["Global Quote"]);
+            if (resJson["Global Quote"]) {
+              stock.quote = resJson["Global Quote"];
+              if(stock.symbol === this.state.preview.symbol) {
+                localforage.setItem(`${BASE_URL}${QUOTE_PATH}&symbol=${stock.symbol}&apikey=${USER_KEY}`,resJson);
+                return({preview: stock});
+              }
+              else { 
+                console.log('blocked');
+                return;
+              }
+            }
+            //console.log(this.state.preview.symbol, stock.symbol);
+
+          });
+        });
+      }
+    }).catch(err => {
+      if (err) console.log(err);
     });
+
   }
   onChangeFocusSearch(ev) {
     switch (ev.type) {
@@ -205,8 +253,9 @@ class App extends Component {
         cFavourites.push(v);
       } else {
         v.bookmarked = false;
-        cFavourites = cFavourites.filter((c) => c.symbol != v.symbol);
+        cFavourites = cFavourites.filter((c) => c.symbol !== v.symbol);
       }
+      localforage.setItem('state',{favourites: cFavourites});
       return({favourites: cFavourites, preview: v});
     });
     //console.log(v);
@@ -215,7 +264,7 @@ class App extends Component {
   previewStock(v) {
     let favourites = this.state.favourites;
     clearTimeout(timeout);
-    let fromFavourites = favourites.find((c) => c.symbol == v.symbol);
+    let fromFavourites = favourites.find((c) => c.symbol === v.symbol);
     v = fromFavourites ? fromFavourites : v;
     //console.log(v);
     this.setState({preview: v, searching:false});
@@ -228,11 +277,14 @@ class App extends Component {
   }
 
   removeFromFavourites(v) {
-    //const currData = this.state.dataList;
-    const newFaves = this.state.favourites.filter((c) => {
-      return c.symbol !== v.symbol;
+    this.setState((oldState, oldProps) => {
+      let newFaves = oldState.favourites.filter((c) => {
+        return c.symbol !== v.symbol;
+      });
+      localforage.setItem('state',{favourites: newFaves});
+      return({favourites: newFaves})
     });
-    this.setState({favourites: newFaves});
+    //const currData = this.state.dataList;
     this.onChangeSearch({target: {value: this.state.searchText}});
     //console.log(v);
   }
