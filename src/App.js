@@ -12,6 +12,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faTimesCircle, faBookmark, faNewspaper, faBars } from '@fortawesome/free-solid-svg-icons'
 import request from 'request';
 import { USER_KEY, BASE_URL, QUOTE_PATH } from './constants/alphaVantage';
+import { NEWSAPI_KEY, NEWSAPI_BASE_URL, NEWSAPI_EVERYTHING_PATH } from './constants/newsApi';
 import localforage from "localforage";
 
 let timeout;
@@ -48,6 +49,8 @@ class App extends Component {
       favourites: [],
       timeout: {},
       searchText: '',
+      news: {},
+      showingNews: false,
       searching: false
     }
      this.onChangeSearch = this.onChangeSearch.bind(this);
@@ -59,6 +62,8 @@ class App extends Component {
      this.onKeyDown = this.onKeyDown.bind(this);
      this.closePreview = this.closePreview.bind(this);
      this.queryStockQuote = this.queryStockQuote.bind(this);
+     this.queryNews = this.queryNews.bind(this);
+     this.onPressNews = this.onPressNews.bind(this);
   }
 
   componentDidMount() {
@@ -69,6 +74,47 @@ class App extends Component {
       .catch((err) => {
         console.log(err);
       });
+  }
+
+  queryNews(stock, page=1) {
+    let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${stock.name}&apiKey=${NEWSAPI_KEY}&pageSize=15&page=${page}`;
+    localforage.getItem(url)
+      .then(data => {
+        if (data && data.length) {
+          this.setState({
+            news: {
+              stockSymbol: stock.symbol,
+              articles: data
+            }
+          });
+        }
+        request(url,(err, res) => {
+          res = JSON.parse(res.body);
+          console.log(res.articles);
+          if (err) {
+            this.setState({error: err});
+            return;
+          }
+          let currNewsDate = this.state.news.articles ? this.state.news.articles.publishedAt : '0';
+          if (res && res.status === "ok" && res.articles && res.articles.length && res.articles[0].publishedAt !== currNewsDate ) {
+            localforage.setItem(url,res.articles);
+            this.setState({
+              news: {
+                stockSymbol: stock.symbol,
+                articles: res.articles
+              }
+            });
+          }
+        });
+      })
+      .catch(err => {
+        this.setState({error: err});
+      });
+  }
+
+  onPressNews(stock) {
+    this.setState({showingNews: true});
+    this.queryNews(stock);
   }
 
   onChangeSearch(evt) {
@@ -303,7 +349,7 @@ class App extends Component {
         </header>
         <main>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
-            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} querySymbol={this.queryStockQuote} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
+            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} news={this.state.news} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
             <Portfolio onselect={this.previewStock} dataList={this.state.favourites} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
         </main>
       </div>

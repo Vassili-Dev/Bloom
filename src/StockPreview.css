@@ -19,6 +19,9 @@
 	display:block;
 }
 
+.bookmark-button{
+	transition: color 0.35s;
+}
 .bookmark-button.bookmarked{
 	color: #FF5D73;
 }
