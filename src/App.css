@@ -14,7 +14,7 @@ main{
 
 .App-header {
   background-color: #FF5D73;
-  box-shadow: #0e0e0e 0px 0px 14px 1px;
+  /*box-shadow: #0e0e0e 0px 0px 14px 1px;*/
   max-height: 7vh;
   padding: 10px 10px;
   display: flex;

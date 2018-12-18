@@ -77,44 +77,44 @@ class App extends Component {
   }
 
   queryNews(stock, page=1) {
-    let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${stock.name}&apiKey=${NEWSAPI_KEY}&pageSize=15&page=${page}`;
-    localforage.getItem(url)
-      .then(data => {
-        if (data && data.length) {
-          this.setState({
-            news: {
-              stockSymbol: stock.symbol,
-              articles: data
+    let stockQueryUrl=encodeURIComponent(stock.name+' OR '+stock.symbol);
+    let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${stockQueryUrl}&apiKey=${NEWSAPI_KEY}&pageSize=5&page=${page}`;
+    request(url, (err, res) => {
+      res = JSON.parse(res.body);
+      if (err) {
+        this.setState({error: err});
+      } else {
+        let currNewsDate = this.state.news.articles ? this.state.news.articles.publishedAt : '0';
+        if (res && res.status === "ok" && res.articles && res.articles.length && res.articles[0].publishedAt !== currNewsDate ) {
+          this.setState((oldState,oldProps) => {
+            let indexOfStock = oldState.favourites.findIndex((s) => {
+              return(s.symbol===stock.symbol);
+            });
+            let newFavourites = oldState.favourites;
+            newFavourites[indexOfStock].news = res.articles;
+            localforage.setItem('state', {favourites: newFavourites});
+            if (this.state.preview.symbol === stock.symbol) {
+              return({favourites: newFavourites, preview: newFavourites[indexOfStock]});
+            } else {
+              return({favourites: newFavourites});
             }
+            
           });
         }
-        request(url,(err, res) => {
-          res = JSON.parse(res.body);
-          console.log(res.articles);
-          if (err) {
-            this.setState({error: err});
-            return;
-          }
-          let currNewsDate = this.state.news.articles ? this.state.news.articles.publishedAt : '0';
-          if (res && res.status === "ok" && res.articles && res.articles.length && res.articles[0].publishedAt !== currNewsDate ) {
-            localforage.setItem(url,res.articles);
-            this.setState({
-              news: {
-                stockSymbol: stock.symbol,
-                articles: res.articles
-              }
-            });
-          }
-        });
-      })
-      .catch(err => {
-        this.setState({error: err});
-      });
+      }
+    })
   }
 
   onPressNews(stock) {
-    this.setState({showingNews: true});
-    this.queryNews(stock);
+    let indexOfStock = this.state.favourites.findIndex((s) => {
+      return(stock.symbol === s.symbol);
+    });
+    //console.log(indexOfStock);
+    if (indexOfStock > -1) {
+      this.setState({showingNews: true});
+      this.queryNews(stock);
+    }
+    else console.log('Save this stock first'); 
   }
 
   onChangeSearch(evt) {
@@ -349,9 +349,10 @@ class App extends Component {
         </header>
         <main>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
-            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} news={this.state.news} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
+            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
             <Portfolio onselect={this.previewStock} dataList={this.state.favourites} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
         </main>
+        
       </div>
     );
   }

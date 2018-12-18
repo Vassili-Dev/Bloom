@@ -8,7 +8,7 @@
 	width: 50%;
 	box-shadow: #c0c0c0 0px 0px 10px 1px;
 	background-color: rgba(255, 255 , 255 , 0.3);
-	min-width: 250px;
+	min-width: 300px;
 	min-height: 200px;
 	overflow:hidden;
 }
@@ -48,13 +48,30 @@
 	cursor: pointer;
 }
 
+.stock-news-list{
+	padding-left: 0!important;
+}
+.stock-news-item{
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.news-item-copy{
+	font-size: 0.8rem;
+}
+
+.news-item-image{
+	width: 100%;
+	height: auto;
+}
 .stock-value {
 	font-size: 20px!important;
 }
-.green {
+.stock-preview-content .green {
 	color: green;
 }
-.red {
+.stock-preview-content .red {
 	color: red;
 }
 .stock-preview-content {

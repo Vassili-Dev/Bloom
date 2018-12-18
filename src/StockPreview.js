@@ -17,14 +17,13 @@ class SearchBar extends Component {
 						{this.props.stock.quote ? <strong className={`stock-value ${(this.props.stock.quote["09. change"] < 0) ? 'red' : 'green'}`}>{this.props.stock.quote['02. open']}</strong> : ""}
 	      	</div>
 	      	<div className={`stock-news-container ${!this.props.showingNews ? 'hidden' : ''}`}>
-				{(this.props.showingNews && this.props.news && this.props.news.stockSymbol===this.props.stock.symbol && this.props.news.articles.length) && 
+				{(this.props.showingNews && this.props.stock.news && this.props.stock.news.length) && 
 				<ul className="stock-news-list">
-					{ this.props.news.articles.map((n,i) => {
-						console.log(n);
-						return (<li key={n.symbol+'-'+i}className="stock-news-item">
-									{navigator.onLine ? <img src={n.urlToImage}/> : <div/>}
+					{ this.props.stock.news.map((n,i) => {
+						return (<li key={n.symbol+'-'+i} onClick={() => { if(n.url) window.location.href=n.url}}className="stock-news-item">
+									{navigator.onLine ? <img className="news-item-image" src={n.urlToImage}/> : <div/>}
 									<div className="news-item-copy">
-										<h5>{n.title}</h5>
+										<strong>{n.title}</strong>
 										<p>{n.source.name}</p>
 										<p>{n.description}</p>
 									</div>
