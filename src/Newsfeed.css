@@ -1,0 +1,21 @@
+.newsfeed-container{
+	width: 60%;
+	min-width: 300px;
+}
+.newsfeed-list{
+	padding-left: 0!important;
+}
+.newsfeed-item{
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.newsfeed-item-copy{
+	font-size: 0.8rem;
+}
+
+.newsfeed-item-image{
+	width: 100%;
+	height: auto;
+}

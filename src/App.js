@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import SearchBar from './SearchBar';
 import StockPreview from './StockPreview';
 import Portfolio from './Portfolio';
+import Newsfeed from './Newsfeed';
 
 import './App.css';
 import { tickerSearch } from './data/tickerSearch';
@@ -15,10 +16,20 @@ import { USER_KEY, BASE_URL, QUOTE_PATH } from './constants/alphaVantage';
 import { NEWSAPI_KEY, NEWSAPI_BASE_URL, NEWSAPI_EVERYTHING_PATH } from './constants/newsApi';
 import localforage from "localforage";
 
+const util = require('util');
+require('util.promisify').shim();
+
+const requestPromise = util.promisify(request);
+
 let timeout;
 
 library.add(faTimesCircle, faBookmark, faNewspaper, faBars );
 
+const sortNewsArray = (a, b) => {
+   a = new Date(a.publishedAt);
+   b = new Date(b.publishedAt);
+   return (b-a);
+}
 const filterTicker = (text, list,favourites=[]) => { return new Promise((resolve,reject) => {
   let filteredList = [];
   if (!text.length) resolve([]);
@@ -64,26 +75,81 @@ class App extends Component {
      this.queryStockQuote = this.queryStockQuote.bind(this);
      this.queryNews = this.queryNews.bind(this);
      this.onPressNews = this.onPressNews.bind(this);
+     this.fetchAllNews = this.fetchAllNews.bind(this);
   }
 
   componentDidMount() {
     localforage.getItem('state')
       .then((data) => {
         this.setState(data);
+        this.fetchAllNews(1, true);
       })
       .catch((err) => {
         console.log(err);
       });
   }
 
-  queryNews(stock, page=1) {
+  fetchAllNews(page=1,withCache = false) {
+    if (withCache) {
+      localforage.getItem('newsfeed')
+        .then((data) => {
+          if(data) this.setState({'newsfeed': data});
+          let newNewsfeed = [];
+          let requestBatch = [];
+          this.state.favourites.forEach((c) => {
+            let allNewsQueryUrlPart = encodeURIComponent(c.name+' OR '+c.symbol);
+            let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${allNewsQueryUrlPart}&apiKey=${NEWSAPI_KEY}&pageSize=5&page=${page}`;
+            requestBatch.push(requestPromise(url));
+          });
+          Promise.all(requestBatch)
+            .then((res) => {
+              res.forEach(c => {
+                c = JSON.parse(c.body);
+                if (c && c.status === "ok" && c.articles && c.articles.length) {
+                  newNewsfeed = [...newNewsfeed, ...c.articles].sort(sortNewsArray);
+                }});
+              this.setState({ newsfeed: newNewsfeed});
+              localforage.setItem('newsfeed',newNewsfeed);
+            })
+            .catch((err) => {
+              this.setState({error: err});
+            });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } else {
+      let newNewsfeed = [];
+      let requestBatch = [];
+      this.state.favourites.forEach((c) => {
+        let allNewsQueryUrlPart = encodeURIComponent(c.name+' OR '+c.symbol);
+        let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${allNewsQueryUrlPart}&apiKey=${NEWSAPI_KEY}&pageSize=5&page=${page}`;
+        requestBatch.push(requestPromise(url));
+      });
+      Promise.all(requestBatch)
+        .then((res) => {
+          res.forEach(c => {
+            c = JSON.parse(c.body);
+            if (c && c.status === "ok" && c.articles && c.articles.length) {
+              newNewsfeed = [...newNewsfeed, ...c.articles].sort(sortNewsArray);
+            }});
+          this.setState({ newsfeed: newNewsfeed});
+          localforage.setItem('newsfeed',newNewsfeed);
+        })
+        .catch((err) => {
+          this.setState({error: err});
+        });
+    }
+  }
+
+  queryNews(stock, preview=false, page=1 ) {
     let stockQueryUrl=encodeURIComponent(stock.name+' OR '+stock.symbol);
     let url = `${NEWSAPI_BASE_URL}${NEWSAPI_EVERYTHING_PATH}?q=${stockQueryUrl}&apiKey=${NEWSAPI_KEY}&pageSize=5&page=${page}`;
     request(url, (err, res) => {
-      res = JSON.parse(res.body);
       if (err) {
         this.setState({error: err});
       } else {
+        res = JSON.parse(res.body);
         let currNewsDate = this.state.news.articles ? this.state.news.articles.publishedAt : '0';
         if (res && res.status === "ok" && res.articles && res.articles.length && res.articles[0].publishedAt !== currNewsDate ) {
           this.setState((oldState,oldProps) => {
@@ -92,11 +158,12 @@ class App extends Component {
             });
             let newFavourites = oldState.favourites;
             newFavourites[indexOfStock].news = res.articles;
+            let newNewsfeed = [...oldState.newsfeed,...res.articles].sort(sortNewsArray);
             localforage.setItem('state', {favourites: newFavourites});
-            if (this.state.preview.symbol === stock.symbol) {
-              return({favourites: newFavourites, preview: newFavourites[indexOfStock]});
+            if (this.state.preview.symbol === stock.symbol && preview) {
+              return({favourites: newFavourites, preview: newFavourites[indexOfStock], newsfeed: newNewsfeed});
             } else {
-              return({favourites: newFavourites});
+              return({favourites: newFavourites, newsfeed: newNewsfeed});
             }
             
           });
@@ -112,7 +179,7 @@ class App extends Component {
     //console.log(indexOfStock);
     if (indexOfStock > -1) {
       this.setState({showingNews: true});
-      this.queryNews(stock);
+      this.queryNews(stock,true);
     }
     else console.log('Save this stock first'); 
   }
@@ -189,8 +256,10 @@ class App extends Component {
     }).catch(err => {
       if (err) console.log(err);
     });
-
   }
+
+
+
   onChangeFocusSearch(ev) {
     switch (ev.type) {
       case 'focus':
@@ -296,6 +365,7 @@ class App extends Component {
       let cFavourites = oldState.favourites;
       if (!v.bookmarked) {
         v.bookmarked = true;
+        this.queryNews(v);
         cFavourites.push(v);
       } else {
         v.bookmarked = false;
@@ -344,12 +414,12 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <h2>Bl&ouml;m
-          </h2>
+          <h2>Bl&ouml;m</h2>
         </header>
         <main>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
             {this.state.preview.symbol ? <StockPreview stock={this.state.preview} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
+            <Newsfeed viewing={true} newsfeed={this.state.newsfeed} />
             <Portfolio onselect={this.previewStock} dataList={this.state.favourites} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
         </main>
         
