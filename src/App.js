@@ -65,6 +65,7 @@ class App extends Component {
       searching: false
     }
      this.onChangeSearch = this.onChangeSearch.bind(this);
+     this.checkIfBackground = this.checkIfBackground.bind(this);
      this.unTab = this.unTab.bind(this);
      this.addToFavourites = this.addToFavourites.bind(this);
      this.previewStock = this.previewStock.bind(this);
@@ -388,6 +389,15 @@ class App extends Component {
     //console.log(v);
   }
 
+  checkIfBackground(v) {
+    // console.log(v.target.classList);
+    // let correctTarget = false;
+    let correctTarget = (v.target.classList.contains("close-button") || v.target.classList.contains("stock-preview-blur"));
+    if (correctTarget) {
+      this.closePreview();
+    }
+  }
+
   closePreview(v) {
     this.setState({preview: {}});
   }
@@ -416,16 +426,16 @@ class App extends Component {
         <header className="App-header">
           <h2>Bl&ouml;m</h2>
         </header>
-        <main>
+        <main className={this.state.preview.symbol ? "blur" : ""}>
             <SearchBar id="searchBar" text={this.state.searchText} onselect={this.previewStock} focused={this.state.searching} onChangeSearch={this.onChangeSearch} dataList={this.state.dataList} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
-            {this.state.preview.symbol ? <StockPreview stock={this.state.preview} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.closePreview}/> : <div/>}
             <Newsfeed viewing={true} newsfeed={this.state.newsfeed} />
             <Portfolio onselect={this.previewStock} dataList={this.state.favourites} onChangeFocus={this.onChangeFocusSearch} onKeyDown={this.onKeyDown}/>
         </main>
-        
+        {this.state.preview.symbol ? <StockPreview stock={this.state.preview} showingNews={this.state.showingNews} querySymbol={this.queryStockQuote} onNews={this.onPressNews} onBookmark={this.addToFavourites} closePreview={this.checkIfBackground}/> : <div/>}
       </div>
     );
   }
 }
 
 export default App;
+ 

@@ -6,36 +6,38 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 class SearchBar extends Component {
   render() {
     return (
-    	<div className='stock-preview-container'>
-    		<div className="stock-preview-head">
-    			<div className="padder"/>
-	      		<h4>{this.props.stock.symbol}</h4>
-	      		<FontAwesomeIcon className="close-button" onClick={this.props.closePreview} icon="times-circle"/>
-	      	</div>
-	      	<div className="stock-preview-content">
-	      		<p>{this.props.stock.name}</p>
-						{this.props.stock.quote ? <strong className={`stock-value ${(this.props.stock.quote["09. change"] < 0) ? 'red' : 'green'}`}>{this.props.stock.quote['02. open']}</strong> : ""}
-	      	</div>
-	      	<div className={`stock-news-container ${!this.props.showingNews ? 'hidden' : ''}`}>
-				{(this.props.showingNews && this.props.stock.news && this.props.stock.news.length) && 
-				<ul className="stock-news-list">
-					{ this.props.stock.news.map((n,i) => {
-						return (<li key={n.symbol+'-'+i} onClick={() => { if(n.url) window.location.href=n.url}}className="stock-news-item">
-									{navigator.onLine ? <img className="news-item-image" src={n.urlToImage}/> : <div/>}
-									<div className="news-item-copy">
-										<strong>{n.title}</strong>
-										<p>{n.source.name}</p>
-										<p>{n.description}</p>
-									</div>
-								</li>)
-					}) }
-	      		</ul>}
-	      	</div>
-	      	<div className="stock-preview-footer">
-	      		<FontAwesomeIcon className="news-button" onClick={() => this.props.onNews(this.props.stock)} icon="newspaper"/>
-	      		<FontAwesomeIcon className="menu-button" onClick={this.props.closePreview} icon="bars"/>
-	      		<FontAwesomeIcon className={`bookmark-button ${this.props.stock.bookmarked ? "bookmarked" : ""}`} onClick={() => this.props.onBookmark(this.props.stock)} icon="bookmark"/>
-	      	</div>
+    	<div className="stock-preview-blur" onClick={this.props.closePreview}>
+	    	<div className={`stock-preview-container ${this.props.showingNews ? 'extended' : ''}`}>
+	    		<div className="stock-preview-head">
+	    			<div className="padder"/>
+		      		<h4>{this.props.stock.symbol}</h4>
+		      		<FontAwesomeIcon className="close-button" icon="times-circle"/>
+		      	</div>
+		      	<div className="stock-preview-content">
+		      		<p>{this.props.stock.name}</p>
+							{this.props.stock.quote ? <strong className={`stock-value ${(this.props.stock.quote["09. change"] < 0) ? 'red' : 'green'}`}>{this.props.stock.quote['02. open']}</strong> : ""}
+		      	</div>
+		      	<div className={`stock-news-container ${!this.props.showingNews ? 'hidden' : ''}`}>
+					{(this.props.showingNews && this.props.stock.news && this.props.stock.news.length) && 
+					<ul className="stock-news-list">
+						{ this.props.stock.news.map((n,i) => {
+							return (<li key={n.symbol+'-'+i} onClick={() => { if(n.url) window.location.href=n.url}}className="stock-news-item">
+										{navigator.onLine ? <img className="news-item-image" src={n.urlToImage}/> : <div/>}
+										<div className="news-item-copy">
+											<strong>{n.title}</strong>
+											<p>{n.source.name}</p>
+											<p>{n.description}</p>
+										</div>
+									</li>)
+						}) }
+		      		</ul>}
+		      	</div>
+		      	<div className="stock-preview-footer">
+		      		<FontAwesomeIcon className="news-button" onClick={() => this.props.onNews(this.props.stock)} icon="newspaper"/>
+		      		<FontAwesomeIcon className="menu-button" onClick={this.props.closePreview} icon="bars"/>
+		      		<FontAwesomeIcon className={`bookmark-button ${this.props.stock.bookmarked ? "bookmarked" : ""}`} onClick={() => this.props.onBookmark(this.props.stock)} icon="bookmark"/>
+		      	</div>
+	        </div>
         </div>
     );
   }
